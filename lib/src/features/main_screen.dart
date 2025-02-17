@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class MainScreen extends StatefulWidget {
@@ -8,6 +10,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final _textEditingController = TextEditingController();
+  Future<String>? _postalCodeSearchResult;
+
   @override
   void initState() {
     super.initState();
@@ -17,26 +22,57 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Center(
-          child: Column(
-            children: [
-              const TextField(
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(), labelText: "Postleitzahl"),
-              ),
-              const SizedBox(height: 32),
-              OutlinedButton(
-                onPressed: () {
-                  // TODO: implementiere Suche
-                },
-                child: const Text("Suche"),
-              ),
-              const SizedBox(height: 32),
-              Text("Ergebnis: Noch keine PLZ gesucht",
-                  style: Theme.of(context).textTheme.labelLarge),
-            ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Center(
+            child: Column(
+              children: [
+                TextField(
+                  controller: _textEditingController,
+                  decoration: const InputDecoration(
+                      border: OutlineInputBorder(), labelText: "Postleitzahl"),
+                ),
+                const SizedBox(height: 32),
+                OutlinedButton(
+                  onPressed: () {
+                    setState(
+                      () {
+                        _postalCodeSearchResult =
+                            getCityFromZip(_textEditingController.text);
+                      },
+                    );
+                  },
+                  child: const Text("Suche"),
+                ),
+                const SizedBox(height: 32),
+                FutureBuilder(
+                  future: _postalCodeSearchResult,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    } else if (snapshot.connectionState ==
+                        ConnectionState.done) {
+                      if (snapshot.hasData) {
+                        return Text(
+                          "${snapshot.data}",
+                          style: Theme.of(context).textTheme.labelLarge,
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text(
+                          "Suche fehlgeschlagen",
+                          style: Theme.of(context).textTheme.labelLarge!.copyWith(color: Colors.red),
+                        );
+                      }
+                    }
+                    return Text(
+                      "Ergebnis: Noch nicht gesucht...",
+                      style: Theme.of(context).textTheme.labelLarge,
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -45,13 +81,17 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
-    // TODO: dispose controllers
+    _textEditingController.dispose();
     super.dispose();
   }
 
   Future<String> getCityFromZip(String zip) async {
     // simuliere Dauer der Datenbank-Anfrage
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (Random().nextInt(5) == 0) {
+      throw Exception("Ooopsie...");
+    }
 
     switch (zip) {
       case "10115":
